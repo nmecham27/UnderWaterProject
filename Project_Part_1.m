@@ -7,7 +7,9 @@ h = [0.227 0.46 0.688 0.46 0.227];
 data = randi([0 1], 2*M, 1);
 data_freq = nrSymbolModulate(data, 'QPSK');
 
-% Convert to time domain
+figure; scatter(real(data_freq), imag(data_freq));
+
+% Convert to time domaindata_freq
 data_time = ifft(data_freq);
 
 % Add CP's
@@ -23,7 +25,8 @@ for m = L:M+L-1
     end
 end
 
-y_time = y_time(L:length(y_time))';
+% .' does the transpose. Just ' is the hermitian
+y_time = y_time(L:length(y_time)).';
 
 
 y_freq = fft(y_time);
@@ -31,6 +34,7 @@ h_freq = fft(h,16);
 
 result = y_freq./h_freq;
 
+result = result.';
 
 
 
