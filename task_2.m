@@ -45,8 +45,8 @@ hold on
 title("Pre filtered samples");
 hold off
 figure(2)
-%spectrogram(abs(x),[],[],[],fs,'yaxis');
-spectrogram(x,[],[],[],fs,'yaxis');
+spectrogram(abs(x),[],[],[],fs,'yaxis');
+%spectrogram(x,[],[],[],fs,'yaxis');
 hold on
 title("Pre filtered samples spectrogram");
 hold off
@@ -61,8 +61,8 @@ hold on
 title("Filtered samples");
 hold off
 figure(4)
-%spectrogram(abs(f_filtered),100,0,100,fs,'yaxis');
-spectrogram(f_filtered,100,0,100,fs,'yaxis');
+spectrogram(abs(f_filtered),100,0,100,fs,'yaxis');
+%spectrogram(f_filtered,100,0,100,fs,'yaxis');
 hold on
 title("Filtered samples spectrogram");
 hold off
@@ -98,13 +98,13 @@ title("OFDM passband signal")
 hold off
 
 figure(6)
-spectrogram(abs(LFM), 100, 80, 100, fs, 'yaxis');
+spectrogram(LFM, 100, 80, 100, fs, 'yaxis');
 hold on
 title("Chirps")
 hold off
 
 figure(7)
-spectrogram(abs(lfm_symbols), 100, 80, 100, fs, 'yaxis');
+spectrogram(lfm_symbols, 100, 80, 100, fs, 'yaxis');
 hold on
 title("OFDM symbols with chirp applied")
 hold off
