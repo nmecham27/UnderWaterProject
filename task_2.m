@@ -1,4 +1,6 @@
-M = 8; % # of subcarriers (2048)
+clear all;
+clf;
+M = 2048; % # of subcarriers (2048)
 L = 5; % # of channel taps
 N = 1; % # of OFDM symbols (16)
 h = [0.227 0.46 0.688 0.46 0.227];
@@ -39,14 +41,31 @@ x = upsample(x, lambda);
 f = (fs*(-length(x)/2:length(x)/2 - 1)/length(x));
 figure(1)
 plot(f, abs(x));
+hold on
+title("Pre filtered samples");
+hold off
+figure(2)
+%spectrogram(abs(x),[],[],[],fs,'yaxis');
+spectrogram(x,[],[],[],fs,'yaxis');
+hold on
+title("Pre filtered samples spectrogram");
+hold off
 
 filter = rcosine(1, lambda, 'sqrt', beta, delay);
 x_filtered = conv(x, filter);
 
-
 f_filtered = (fs*(-length(x_filtered)/2:length(x_filtered)/2 - 1)/length(x_filtered));
-figure(2)
+figure(3)
 plot(f_filtered, abs(x_filtered));
+hold on
+title("Filtered samples");
+hold off
+figure(4)
+%spectrogram(abs(f_filtered),100,0,100,fs,'yaxis');
+spectrogram(f_filtered,100,0,100,fs,'yaxis');
+hold on
+title("Filtered samples spectrogram");
+hold off
 
 
 x_pass_band = zeros(length(x_filtered), 1);
@@ -58,16 +77,37 @@ f0 = fc - 4e3;
 f1 = fc + 4e3;
 t1 = .05;
 b = (f1-f0)/t1;
-t = linspace(0, t1, b);
-f_t = f0+b.*t;
+%t = linspace(0, t1, b);
+t = linspace(0, t1, fs);
+%f_t = f0+b.*t;
+f_t = fc+b.*t;
 chirp = cos(2*pi.*f_t.*t).';
-z = zeros(640e3, 1);
+%z = zeros(b*4, 1);
+z = zeros(fs*4, 1);
 LFM = [];
 for i = 1:4
    LFM = [LFM; chirp; z]; 
 end
 
 lfm_symbols = [LFM; x_pass_band; LFM];
+
+figure(5)
+spectrogram(x_pass_band, 100,80, 100, fs, 'yaxis');
+hold on
+title("OFDM passband signal")
+hold off
+
+figure(6)
+spectrogram(abs(LFM), 100, 80, 100, fs, 'yaxis');
+hold on
+title("Chirps")
+hold off
+
+figure(7)
+spectrogram(abs(lfm_symbols), 100, 80, 100, fs, 'yaxis');
+hold on
+title("OFDM symbols with chirp applied")
+hold off
 
 
 
@@ -86,5 +126,5 @@ x_ovf = conv(lfm_symbols_base_band, filter);
 
 x_ovf_down_sampled = downsample(x_ovf(2*delay:length(x_ovf)), lambda); 
 
-result = fft(x_ovf_down_sampled);
+result = fft(x_ovf_down_sampled); % Go back to frequency domain
 
