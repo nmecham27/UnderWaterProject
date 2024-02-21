@@ -20,8 +20,6 @@ ts = Ts/lambda;
 original_symbols = [];
 x = [];
 for i = 1:N
-    
-    
     % Generate M QPSK symbols
     data = randi([0 1], 2*M, 1);
     data_freq = nrSymbolModulate(data, 'QPSK');
@@ -77,13 +75,10 @@ f0 = fc - 4e3;
 f1 = fc + 4e3;
 t1 = .05;
 b = (f1-f0)/t1;
-%t = linspace(0, t1, b);
-t = linspace(0, t1, fs);
-%f_t = f0+b.*t;
-f_t = fc+b.*t;
+t = linspace(0, t1, t1*fs);
+f_t = f0+b.*t;
 chirp = cos(2*pi.*f_t.*t).';
-%z = zeros(b*4, 1);
-z = zeros(fs*4, 1);
+z = zeros(4*length(t), 1);
 LFM = [];
 for i = 1:4
    LFM = [LFM; chirp; z]; 
@@ -111,20 +106,35 @@ hold off
 
 
 
-% Validation
-lfm_symbols_base_band_I = zeros(length(lfm_symbols), 1);
-lfm_symbols_base_band_Q = zeros(length(lfm_symbols), 1);
-for n = 1: length(lfm_symbols)
-    lfm_symbols_base_band_I(n) = lfm_symbols(n)*cos(2*pi*fc*n*ts); 
-    lfm_symbols_base_band_Q(n) = -1*lfm_symbols(n)*sin(2*pi*fc*n*ts); 
+% Validation (using LFM)
+% lfm_symbols_base_band_I = zeros(length(lfm_symbols), 1);
+% lfm_symbols_base_band_Q = zeros(length(lfm_symbols), 1);
+% for n = 1: length(lfm_symbols)
+%     lfm_symbols_base_band_I(n) = lfm_symbols(n)*2*cos(2*pi*fc*n*ts); 
+%     lfm_symbols_base_band_Q(n) = -1*lfm_symbols(n)*2*sin(2*pi*fc*n*ts); 
+% end
+% 
+% lfm_symbols_base_band = lfm_symbols_base_band_I + j*lfm_symbols_base_band_Q;
+% 
+% x_ovf = conv(lfm_symbols_base_band, filter);
+% 
+% x_ovf_down_sampled = downsample(x_ovf(2*delay:length(x_ovf)), lambda); 
+% 
+% result = fft(x_ovf_down_sampled); % Go back to frequency domain
+
+
+% Validation (using only passband data)
+lfm_symbols_base_band_I = zeros(length(x_pass_band), 1);
+lfm_symbols_base_band_Q = zeros(length(x_pass_band), 1);
+for n = 1: length(x_pass_band)
+    lfm_symbols_base_band_I(n) = x_pass_band(n)*2*cos(2*pi*fc*n*ts); 
+    lfm_symbols_base_band_Q(n) = -1*x_pass_band(n)*2*sin(2*pi*fc*n*ts); 
 end
 
 lfm_symbols_base_band = lfm_symbols_base_band_I + j*lfm_symbols_base_band_Q;
 
-
 x_ovf = conv(lfm_symbols_base_band, filter);
 
-x_ovf_down_sampled = downsample(x_ovf(2*delay:length(x_ovf)), lambda); 
+x_ovf_down_sampled = downsample(x_ovf(2*delay:length(x_ovf)), lambda);
 
 result = fft(x_ovf_down_sampled); % Go back to frequency domain
-
