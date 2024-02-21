@@ -1,7 +1,7 @@
 clear all;
 clf;
 M = 2048; % # of subcarriers (2048)
-L = 5; % # of channel taps
+L = 201; % # of channel taps
 N = 1; % # of OFDM symbols (16)
 h = [0.227 0.46 0.688 0.46 0.227];
 lambda = 24;
@@ -34,6 +34,8 @@ end
 
 x = [x; zeros(L-1, 1)];
 
+x_zeros = x;
+
 x = upsample(x, lambda);
 
 f = (fs*(-length(x)/2:length(x)/2 - 1)/length(x));
@@ -50,6 +52,7 @@ title("Pre filtered samples spectrogram");
 hold off
 
 filter = rcosine(1, lambda, 'sqrt', beta, delay);
+filter = filter.';
 x_filtered = conv(x, filter);
 
 f_filtered = (fs*(-length(x_filtered)/2:length(x_filtered)/2 - 1)/length(x_filtered));
@@ -67,8 +70,8 @@ hold off
 
 
 x_pass_band = zeros(length(x_filtered), 1);
-for i = 1:length(x_filtered)
-    x_pass_band(i) = real(x_filtered(i)*exp(j*2*pi*fc*i*ts));
+for i = 0:length(x_filtered)-1
+    x_pass_band(i+1) = real(x_filtered(i+1)*exp(j*2*pi*fc*i*ts));
 end
 
 f0 = fc - 4e3;
@@ -87,13 +90,13 @@ end
 lfm_symbols = [LFM; x_pass_band; LFM];
 
 figure(5)
-spectrogram(x_pass_band, 100,80, 100, fs, 'yaxis');
+spectrogram(x_pass_band, 4096, (3/4)*4096, 4096, fs, 'yaxis');
 hold on
 title("OFDM passband signal")
 hold off
 
 figure(6)
-spectrogram(LFM, 100, 80, 100, fs, 'yaxis');
+spectrogram(LFM, 4096, (3/4)*4096, 4096, fs, 'yaxis');
 hold on
 title("Chirps")
 hold off
@@ -123,18 +126,21 @@ hold off
 % result = fft(x_ovf_down_sampled); % Go back to frequency domain
 
 
+
 % Validation (using only passband data)
 lfm_symbols_base_band_I = zeros(length(x_pass_band), 1);
 lfm_symbols_base_band_Q = zeros(length(x_pass_band), 1);
-for n = 1: length(x_pass_band)
-    lfm_symbols_base_band_I(n) = x_pass_band(n)*2*cos(2*pi*fc*n*ts); 
-    lfm_symbols_base_band_Q(n) = -1*x_pass_band(n)*2*sin(2*pi*fc*n*ts); 
+for n = 0: length(x_pass_band)-1
+    lfm_symbols_base_band_I(n+1) = x_pass_band(n+1)*2*cos(2*pi*fc*n*ts); 
+    lfm_symbols_base_band_Q(n+1) = -1*x_pass_band(n+1)*2*sin(2*pi*fc*n*ts); 
 end
 
 lfm_symbols_base_band = lfm_symbols_base_band_I + j*lfm_symbols_base_band_Q;
 
 x_ovf = conv(lfm_symbols_base_band, filter);
 
-x_ovf_down_sampled = downsample(x_ovf(2*delay:length(x_ovf)), lambda);
-
+x_ovf = x_ovf((lambda*delay*2)+1:length(x_ovf));
+x_ovf_down_sampled = downsample(x_ovf, lambda);
+x_ovf_down_sampled = x_ovf_down_sampled(L:length(x_ovf_down_sampled));
+x_ovf_down_sampled = x_ovf_down_sampled(1:M);
 result = fft(x_ovf_down_sampled); % Go back to frequency domain
