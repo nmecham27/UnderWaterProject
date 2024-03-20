@@ -18,7 +18,7 @@ for j = 1:N
     % Convert to time domaindata_freq
     data_time = ifft(data_freq);
     
-    % Add CP's
+    % Add ZP's
     %x = data_time(length(data_time) - L + 2: length(data_time));
     x = zeros(L-1, 1);
     x = [x; data_time; x];
