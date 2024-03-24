@@ -172,7 +172,9 @@ yBB_filtered = yBB_filtered((lambda*delay*2)+1:length(yBB_filtered));
 
 p_null = zeros(length(2200:1:2400), length(-2:.1:2));
 %Loop through the index
-%Note: This loop takes a LONG time. Like an hour to run
+%Note: This loop takes a LONG time. Like 10 minutes to run
+p_null_n_index = 1;
+p_null_esp_index = 1;
 for n = 2200:1:2400
     % Loop through the frequency offsets
     for eps = -2:.1:2
@@ -196,20 +198,23 @@ for n = 2200:1:2400
         %*********************************************
 
         %Obtaining frequency data
+        %This is the biggest problem loop for why everything takes so long
         z_freq_data = zeros(1,K);
-        for i = 1:1:K
-            for j = 0:1:K+L-1
-                z_freq_data(i) = yBB_down_sampled(j+1)*exp(-1i*((2*pi*(i-1)*j)/(K)));
+        for dnull = 1:1:K
+            if(ofdm_map(dnull) == 0) %found a null subcarrier index so process that data
+                for j = 0:1:K+L-1
+                    z_freq_data(dnull) = yBB_down_sampled(j+1)*exp(-1i*((2*pi*(dnull-1)*j)/(K)));
+                end
             end
         end
 
         %Calculate the power over null subcarriers
         %Use the ofdm_map data provided to find the index of the null sub
         %carriers.
-        for dnull = 1:length(ofdm_map)
-            if(ofdm_map(i) == 0)
-                p_null(n,eps) = p_null(n,eps) + abs(z_freq_data(i))^2;
-            end
+        for i = 1:length(z_freq_data)
+            p_null(p_null_n_index,p_null_esp_index) = p_null(p_null_n_index,p_null_esp_index) + abs(z_freq_data(i))^2;
         end
+        p_null_esp_index = p_null_esp_index + 1;
     end
+    p_null_n_index = p_null_n_index + 1;
 end
