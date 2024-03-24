@@ -216,5 +216,6 @@ for n = 2200:1:2400
         end
         p_null_esp_index = p_null_esp_index + 1;
     end
+    p_null_esp_index = 1;
     p_null_n_index = p_null_n_index + 1;
 end
