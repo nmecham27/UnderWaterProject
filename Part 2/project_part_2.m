@@ -176,21 +176,24 @@ p_null = zeros(length(2200:1:2400), length(-2:.1:2));
 for n = 2200:1:2400
     % Loop through the frequency offsets
     for eps = -2:.1:2
-%         yBB_cfo_comp = zeros(1,(K+L)*lambda);
-%         for n_index = 0:1:(K+L)*lambda-1
-%             %CFO compensation
-%             yBB_cfo_comp(n_index+1) = yBB_filtered(n_index+n+1)*exp(-1i*2*pi*eps*(n_index+n+1)*ts_192);
-%         end
-%         
-%         %Down sampling
-%         yBB_down_sampled = zeros(1, K+L);
-%         for i = 0:1:K+L-1
-%            yBB_down_sampled(i+1) = yBB_cfo_comp(i*lambda+1);
-%         end
+        yBB_cfo_comp = zeros(1,(K+L)*lambda);
+        for n_index = 0:1:(K+L)*lambda-1
+            %CFO compensation
+            yBB_cfo_comp(n_index+1) = yBB_filtered(n_index+n+1)*exp(-1i*2*pi*eps*(n_index+n+1)*ts_192);
+        end
+        
+        %Down sampling
+        yBB_down_sampled = zeros(1, K+L);
+        for i = 0:1:K+L-1
+           yBB_down_sampled(i+1) = yBB_cfo_comp(i*lambda+1);
+        end
 
-        n_index = n+(0:lambda:((K+L)*lambda-1));
-        n_index = n_index.';
-        yBB_down_sampled = yBB_filtered(n_index).*exp(-1i*2*pi*eps*(n_index)*ts_192);
+        %Experimental section to reduce time of cfo compensationand down
+        %sampling
+%         n_index = n+(0:lambda:((K+L)*lambda-1));
+%         n_index = n_index.';
+%         yBB_down_sampled = yBB_filtered(n_index).*exp(-1i*2*pi*eps*(n_index)*ts_192);
+        %*********************************************
 
         %Obtaining frequency data
         z_freq_data = zeros(1,K);
