@@ -117,7 +117,7 @@ hold off
 
 %We can use the max value & index from the correlation results to find the
 %index
-[max_correlation, max_correlation_index] = max(pb_cor, [], "all");
+[max_correlation, max_correlation_index] = max(pb_cor, [], "all", "linear");
 n0 = lag(max_correlation_index);
 y_pb_re_192 = y_pb_re_192(n0:length(y_pb_re_192));
 
@@ -171,7 +171,7 @@ yBB_filtered = yBB_filtered((lambda*delay*2)+1:length(yBB_filtered));
 % carrier frequency offset of the 1st OFDM block
 
 p_null = zeros(length(2200:1:2400), length(-2:.1:2));
-%Loop through the index
+%Loop through the sample index
 %Note: This loop takes a LONG time. Like 10 minutes to run
 p_null_n_index = 1;
 p_null_esp_index = 1;
@@ -187,7 +187,7 @@ for n = 2200:1:2400
         %Down sampling
         yBB_down_sampled = zeros(1, K+L);
         for i = 0:1:K+L-1
-           yBB_down_sampled(i+1) = yBB_cfo_comp(i*lambda+1);
+           yBB_down_sampled(i+1) = yBB_cfo_comp((i*lambda)+1);
         end
 
         %Experimental section to reduce time of cfo compensationand down
@@ -219,3 +219,5 @@ for n = 2200:1:2400
     p_null_esp_index = 1;
     p_null_n_index = p_null_n_index + 1;
 end
+
+save("EndOfPart9.mat", "p_null", "z_freq_data", "yBB_filtered", "K", "lambda", "L");
