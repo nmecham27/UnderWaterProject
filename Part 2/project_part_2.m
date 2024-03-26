@@ -1,4 +1,4 @@
-clear all;
+clear variables;
 clf;
 K = 2048; %The total number of subcarriers
 L = 200; %The number of zero-padded symbols
@@ -27,6 +27,7 @@ load("benchmark_rece_data_174623_1472.mat");
 load("pilot_signal_for_synchronization.mat"); %Loads the data into OFDM_data_pre_old
 load("itc_1007_compfilter.mat"); % stores vector in h_comp variable
 load('ofdm_map.mat');
+load("benchmark_parameter_174623_1472.mat");
 
 %Reassign the values loaded in so that we can more easily change to other
 %sets of data
@@ -64,10 +65,11 @@ hold off
 %From the plot I see something like the following for the T_rx
 %Hopefully this is only only place now that we have to do manual
 %data input
-sample_diff=2121170-4269;
-T_rx = sample_diff/sampling_rate_256;
+%sample_diff=2121170-4269;
+%T_rx = sample_diff/sampling_rate_256;
+%a_hat = (T_tx/T_rx)-1;
 
-a_hat = (T_tx/T_rx)-1;
+a_hat = a_est_174623;
 
 %Resample the data with a_hat
 y_pb_re = resample(y_pb,round(((1+a_hat)*10^5)),(10^5));
@@ -164,59 +166,54 @@ filter = rcosine(1, lambda, 'sqrt', beta, delay);
 filter = filter.';
 yBB_filtered = conv(yBB, filter);
 % Remove delay from filtered data
-yBB_filtered = yBB_filtered((lambda*delay*2)+1:length(yBB_filtered));
+yBB_filtered = yBB_filtered((lambda*delay)+1:length(yBB_filtered));
+yBB_filtered = yBB_filtered.';
 
 % Step 9
 % Grid search to find the starting index of the 1st OFDM block and the
 % carrier frequency offset of the 1st OFDM block
 
+n_index = 0:1:(K+L)*lambda-1;
+down_sample_index = 0:1:K+L-1;
+
+%***************************
+%FFT matrix
+m = [1:K].';
+j = [1:K+L];
+fft_matrix = exp(-1i*((2*pi*(m-1)*(j-1))/(K)));
+%***************************
+
+
 p_null = zeros(length(2200:1:2400), length(-2:.1:2));
 %Loop through the sample index
 %Note: This loop takes a LONG time. Like 10 minutes to run
 p_null_n_index = 1;
-p_null_esp_index = 1;
+p_null_eps_index = 1;
 for n = 2200:1:2400
     % Loop through the frequency offsets
     for eps = -2:.1:2
         yBB_cfo_comp = zeros(1,(K+L)*lambda);
-        for n_index = 0:1:(K+L)*lambda-1
-            %CFO compensation
-            yBB_cfo_comp(n_index+1) = yBB_filtered(n_index+n+1)*exp(-1i*2*pi*eps*(n_index+n+1)*ts_192);
-        end
+
+        yBB_cfo_comp(n_index+1) = yBB_filtered(n_index+n+1).*exp(-1i*2*pi*eps*(n_index+n+1)*ts_192);
         
         %Down sampling
         yBB_down_sampled = zeros(1, K+L);
-        for i = 0:1:K+L-1
-           yBB_down_sampled(i+1) = yBB_cfo_comp((i*lambda)+1);
-        end
-
-        %Experimental section to reduce time of cfo compensationand down
-        %sampling
-%         n_index = n+(0:lambda:((K+L)*lambda-1));
-%         n_index = n_index.';
-%         yBB_down_sampled = yBB_filtered(n_index).*exp(-1i*2*pi*eps*(n_index)*ts_192);
-        %*********************************************
+        yBB_down_sampled(down_sample_index+1) = yBB_cfo_comp((down_sample_index*lambda)+1);
+        yBB_down_sampled = yBB_down_sampled.';
 
         %Obtaining frequency data
         %This is the biggest problem loop for why everything takes so long
-        z_freq_data = zeros(1,K);
-        for dnull = 1:1:K
-            if(ofdm_map(dnull) == 0) %found a null subcarrier index so process that data
-                for j = 0:1:K+L-1
-                    z_freq_data(dnull) = yBB_down_sampled(j+1)*exp(-1i*((2*pi*(dnull-1)*j)/(K)));
-                end
-            end
-        end
+        z_freq_data = zeros(K,1);
+        z_freq_data = fft_matrix*yBB_down_sampled;
+
 
         %Calculate the power over null subcarriers
         %Use the ofdm_map data provided to find the index of the null sub
         %carriers.
-        for i = 1:length(z_freq_data)
-            p_null(p_null_n_index,p_null_esp_index) = p_null(p_null_n_index,p_null_esp_index) + abs(z_freq_data(i))^2;
-        end
-        p_null_esp_index = p_null_esp_index + 1;
+        p_null(p_null_n_index, p_null_eps_index) = sum(abs(z_freq_data(ofdm_map==0)).^2);
+        p_null_eps_index = p_null_eps_index + 1;
     end
-    p_null_esp_index = 1;
+    p_null_eps_index = 1;
     p_null_n_index = p_null_n_index + 1;
 end
 

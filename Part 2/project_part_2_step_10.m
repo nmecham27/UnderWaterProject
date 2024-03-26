@@ -1,4 +1,4 @@
-clear all;
+clear variables;
 %clf;
 
 load("EndOfPart9.mat");
@@ -7,7 +7,13 @@ sampling_rate_192 = 192*10^3;
 ts_192 = 1/sampling_rate_192;
 
 %Find the minimum value from the p_null matrix
-[min_p_null, min_p_null_index] = min(p_null, [], "all", "linear");
+[p_null_col_mins, p_null_col_min_row] = min(p_null);
+[min_p_null_value, min_p_null_col_index] = min(p_null_col_mins);
+
+min_p_null_row_index = p_null_col_min_row(min_p_null_col_index);
+
+n0_starting = min_p_null_row_index + 2000;
+n0_eps = (min_p_null_col_index - 1) * .1 - 2;
 
 %Since the index originally started at 2200 (see line 178). To get the
 %index into our actual data we take the found index plus the start then 
