@@ -28,10 +28,18 @@ load("pilot_signal_for_synchronization.mat"); %Loads the data into OFDM_data_pre
 load("itc_1007_compfilter.mat"); % stores vector in h_comp variable
 load('ofdm_map.mat');
 load("benchmark_parameter_174623_1472.mat");
+load('test_rece_data_173048_1472.mat');
 
 %Reassign the values loaded in so that we can more easily change to other
 %sets of data
-y_rec_data = rece_data_ofdm_bench;
+
+%Benchmark data.
+%y_rec_data = rece_data_ofdm_bench;
+
+%Real data
+y_rec_data = rece_data_ofdm_test;
+
+%Pilot signal
 y_pilot_signal = OFDM_data_pre_old;
 
 %Plot the original y data
@@ -65,11 +73,13 @@ hold off
 %From the plot I see something like the following for the T_rx
 %Hopefully this is only only place now that we have to do manual
 %data input
-%sample_diff=2121170-4269;
-%T_rx = sample_diff/sampling_rate_256;
-%a_hat = (T_tx/T_rx)-1;
+%Uncomment for real data
+sample_diff=2127860-12243;
+T_rx = sample_diff/sampling_rate_256;
+a_hat = (T_tx/T_rx)-1;
 
-a_hat = a_est_174623;
+% Uncomment for benchmark data
+%a_hat = a_est_174623;
 
 %Resample the data with a_hat
 y_pb_re = resample(y_pb,round(((1+a_hat)*10^5)),(10^5));
@@ -217,4 +227,6 @@ for n = 2200:1:2400
     p_null_n_index = p_null_n_index + 1;
 end
 
-save("EndOfPart9.mat", "p_null", "z_freq_data", "yBB_filtered", "K", "lambda", "L");
+%Benchmark save
+%save("EndOfPart9.mat", "p_null", "z_freq_data", "yBB_filtered", "K", "lambda", "L", "a_hat");
+save("EndOfPart9Real.mat", "p_null", "z_freq_data", "yBB_filtered", "K", "lambda", "L", "a_hat");
