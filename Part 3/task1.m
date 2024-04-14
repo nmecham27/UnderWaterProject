@@ -82,6 +82,7 @@ for ofdm_symbol = 1:W
         B = norm(-1*zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol).*x3)^2/noise_variance(ofdm_symbol);
         C = norm(-1*zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol).*x2)^2/noise_variance(ofdm_symbol);
         D = norm(-1*zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol).*x4)^2/noise_variance(ofdm_symbol);
+        
         L_b1 = max(A, B)+log(1+exp(-1*abs(B-A)))-(max(C,D)+log(1+exp(-1*abs(D-C))));
         L_b2 = max(A, C)+log(1+exp(-1*abs(C-A)))-(max(B,D)+log(1+exp(-1*abs(D-B))));
         
@@ -89,3 +90,32 @@ for ofdm_symbol = 1:W
         LR(subcarrier*2, ofdm_symbol) = L_b2;
     end
 end
+
+%% Part c
+% Load interleaver vector and codewords
+load("INTRLVR.mat");
+load("CODE.mat");
+
+NAME = './5G_LDPC_M10_N20_Z142_Q2_nonVer.txt';
+[address, LDPC_INFOLEN] = ldpc_mex_initial_CAPI([1420, 2840, 2], NAME);
+est_code = zeros(2*K_d, W);
+bec = zeros(1, W);
+LR_in_de = zeros(length(LR), 1);
+APP_code = zeros(2*K_d, W);
+wec = 0;
+for ofdm_sym = 1:W
+    LR_in_de(INTRLVR) = LR(:,ofdm_sym);
+    APP_code(:,ofdm_sym) = ldpcDecoder_CAPI(address, LR_in_de);
+    est_code(:,ofdm_sym) = (APP_code(:,ofdm_sym) < 0);
+    count = sum(abs(est_code(:,ofdm_sym)-CODE(:,ofdm_sym)));
+    bec(ofdm_sym) = count;
+    if count ~= 0
+        wec = wec + 1;
+    end
+end
+
+ber = bec/W/length(APP_code);
+bler = wec/W;
+
+
+
