@@ -59,20 +59,33 @@ H_d = H(data_index+1,:);
 % The format for the LR matrix is each row corresponds to a
 % differnt OFDM symbol and the colums are L_b1 and L_b1 for
 % each subcarrier
-L_b1 = zeros(K_d,W);
-L_b2 = zeros(K_d,W);
-LR = zeros(W, 2*K_d);
+LR = zeros(2*K_d, W);
 for ofdm_symbol = 1:W
     for subcarrier = 1:K_d
-        x_1 = -1*(norm(zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol)*(1/sqrt(2)+1i*1/sqrt(2)))^2)/noise_variance(ofdm_symbol);
-        x_2 = -1*(norm(zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol)*(-1/sqrt(2)+1i*1/sqrt(2)))^2)/noise_variance(ofdm_symbol);
-        x_3 = -1*(norm(zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol)*(1/sqrt(2)-1i*1/sqrt(2)))^2)/noise_variance(ofdm_symbol);
-        x_4 = -1*(norm(zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol)*(-1/sqrt(2)-1i*1/sqrt(2)))^2)/noise_variance(ofdm_symbol);
+%         x_1 = -1*(norm(zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol)*(1/sqrt(2)+1i*1/sqrt(2)))^2)/noise_variance(ofdm_symbol);
+%         x_2 = -1*(norm(zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol)*(-1/sqrt(2)+1i*1/sqrt(2)))^2)/noise_variance(ofdm_symbol);
+%         x_3 = -1*(norm(zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol)*(1/sqrt(2)-1i*1/sqrt(2)))^2)/noise_variance(ofdm_symbol);
+%         x_4 = -1*(norm(zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol)*(-1/sqrt(2)-1i*1/sqrt(2)))^2)/noise_variance(ofdm_symbol);
+% 
+%         L_b1 = (max(x_1,x_3)*log(1+exp(-1*abs(x_3-x_1)))) - (max(x_2,x_4)*log(1+exp(-1*abs(x_4-x_2))));
+%         L_b2 = (max(x_1,x_2)*log(1+exp(-1*abs(x_2-x_1)))) - (max(x_3,x_4)*log(1+exp(-1*abs(x_4-x_3))));
+% 
+%         LR(ofdm_symbol, (subcarrier*2)-1) = L_b1;
+%         LR(ofdm_symbol, subcarrier*2) = L_b2;
 
-        L_b1 = (max(x_1,x_3)*log(1+exp(-1*abs(x_3-x_1)))) - (max(x_2,x_4)*log(1+exp(-1*abs(x_4-x_2))));
-        L_b2 = (max(x_1,x_2)*log(1+exp(-1*abs(x_2-x_1)))) - (max(x_3,x_4)*log(1+exp(-1*abs(x_4-x_3))));
-
-        LR(ofdm_symbol, (subcarrier*2)-1) = L_b1;
-        LR(ofdm_symbol, subcarrier*2) = L_b2;
+        x1 = 1/sqrt(2) + i*1/sqrt(2);
+        x2 = -1/sqrt(2) + i*1/sqrt(2);
+        x3 = 1/sqrt(2) - i*1/sqrt(2);
+        x4 = -1/sqrt(2) - i*1/sqrt(2);
+        
+        A = norm(-1*zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol).*x1)^2/noise_variance(ofdm_symbol);
+        B = norm(-1*zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol).*x3)^2/noise_variance(ofdm_symbol);
+        C = norm(-1*zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol).*x2)^2/noise_variance(ofdm_symbol);
+        D = norm(-1*zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol).*x4)^2/noise_variance(ofdm_symbol);
+        L_b1 = max(A, B)+log(1+exp(-1*abs(B-A)))-(max(C,D)+log(1+exp(-1*abs(D-C))));
+        L_b2 = max(A, C)+log(1+exp(-1*abs(C-A)))-(max(B,D)+log(1+exp(-1*abs(D-B))));
+        
+        LR((subcarrier*2)-1, ofdm_symbol) = L_b1;
+        LR(subcarrier*2, ofdm_symbol) = L_b2;
     end
 end
