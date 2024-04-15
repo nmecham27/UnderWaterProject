@@ -19,7 +19,7 @@ K_p = length(pilot_index);
 
 % The Zw results but only the data corresponding to
 % pilot subcarriers
-zp = bb_rece_data_172648_1474(pilot_index+1,:);
+zp1 = bb_rece_data_172648_1474(pilot_index+1,:);
 
 % Define the V matrix
 V = exp(-1i*2*pi.*((pilot_index.*l)/K));
@@ -28,12 +28,12 @@ V = exp(-1i*2*pi.*((pilot_index.*l)/K));
 D = diag(OFDM_PILOT(pilot_index+1));
 
 % Now calculate the time-domain channel
-h_ls = (1/K_p)*V'*D'*zp;
+h_ls_one = (1/K_p)*V'*D'*zp1;
 
 % Now calculate the frequeny-domain channel estimate
 freq_v = exp(-1i*2*pi.*(((k_range.').*l)/K));
 
-H = freq_v*h_ls;
+H1 = freq_v*h_ls_one;
 
 %% Part b
 % Find the indices of the null subcarriers
@@ -53,7 +53,7 @@ zd = bb_rece_data_172648_1474(data_index+1,:);
 
 % Get the channel estimate corresponding to the data
 % subcarriers
-H_d = H(data_index+1,:);
+H_d = H1(data_index+1,:);
 
 % Calculate the LR
 % The format for the LR matrix is each row corresponds to a
@@ -118,4 +118,29 @@ ber = bec/W/length(APP_code);
 bler = wec/W;
 
 
+%% Task 2
+%% Part a
+% Hydrophone 2
+load("benchmark_Zw_172648_2.mat");
+
+zp2 = bb_rece_data_172648_1475(pilot_index+1,:);
+
+% Need to redefine D matrix, D variable was redefined when calculating LLR
+D = diag(OFDM_PILOT(pilot_index+1));
+
+% Now calculate the time-domain channel
+h_ls_two = (1/K_p)*V'*D'*zp2;
+% Freq domain channel
+H2 = freq_v*h_ls_two;
+
+% Hydrophone 3
+load("benchmark_Zw_172648_3.mat");
+
+zp3 = bb_rece_data_172648_1476(pilot_index+1,:);
+% Now calculate the time-domain channel
+h_ls_three = (1/K_p)*V'*D'*zp3;
+% Freq domain channel
+H3 = freq_v*h_ls_three;
+
+%% Part b
 
