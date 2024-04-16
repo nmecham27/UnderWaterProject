@@ -108,13 +108,15 @@ for ofdm_sym = 1:W
     est_code_one(:,ofdm_sym) = (APP_code(:,ofdm_sym) < 0);
     count = sum(abs(est_code_one(:,ofdm_sym)-CODE(:,ofdm_sym)));
     bec_one(ofdm_sym) = count;
-    if count ~= 0
+    if count ~= 0 && ofdm_sym > 1
         wec_one = wec_one + 1;
     end
 end
 
-ber_one = bec_one/W/length(APP_code);
-bler_one = wec_one/W;
+%ber_one = bec_one/W/length(APP_code); % Shouldnt divide by W here?
+% Only calculate ber and bler for OFDM symbols 2-21
+ber_one_total = sum(bec_one(:, 2:W))/(W-1)/length(APP_code);
+bler_one = wec_one/(W-1);
 
 
 %% Task 2
@@ -202,13 +204,14 @@ for ofdm_sym = 1:W
     est_code_two(:,ofdm_sym) = (APP_code(:,ofdm_sym) < 0);
     count = sum(abs(est_code_two(:,ofdm_sym)-CODE(:,ofdm_sym)));
     bec_two(ofdm_sym) = count;
-    if count ~= 0
+    if count ~= 0 && ofdm_sym > 1
         wec_two = wec_two + 1;
     end
 end
 
-ber_two = bec_two/W/length(APP_code);
-bler_two = wec_two/W;
+%ber_two = bec_two/W/length(APP_code); % Shouldnt divide by W here?
+ber_two_total = sum(bec_two(:, 2:W))/(W-1)/length(APP_code);
+bler_two = wec_two/(W-1);
 
 %% Part d
 % Get the channel estimate corresponding to the data
@@ -270,10 +273,11 @@ for ofdm_sym = 1:W
     est_code_three(:,ofdm_sym) = (APP_code(:,ofdm_sym) < 0);
     count = sum(abs(est_code_three(:,ofdm_sym)-CODE(:,ofdm_sym)));
     bec_three(ofdm_sym) = count;
-    if count ~= 0
+    if count ~= 0 && ofdm_sym > 1
         wec_three = wec_three + 1;
     end
 end
 
-ber_three = bec_three/W/length(APP_code);
-bler_three = wec_three/W;
+%ber_three = bec_three/W/length(APP_code); % Shouldnt divide by W here?
+ber_three_total = sum(bec_three(:, 2:W))/(W-1)/length(APP_code);
+bler_three = wec_three/(W-1);
