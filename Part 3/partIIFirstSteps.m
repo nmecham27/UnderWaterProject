@@ -26,7 +26,7 @@ h = Ls*fir1(N,1/Ms,kaiser(N+1,7.8562));
 load("pilot_signal_for_synchronization.mat"); %Loads the data into OFDM_data_pre_old
 load("itc_1007_compfilter.mat"); % stores vector in h_comp variable
 load('ofdm_map.mat');
-load('testing_rece_data_171846_2.mat');
+load('testing_rece_data_171846_3.mat');
 
 %Reassign the values loaded in so that we can more easily change to other
 %sets of data

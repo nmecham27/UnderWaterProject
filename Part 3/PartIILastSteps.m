@@ -118,4 +118,4 @@ for w = 1:21
     z_results = [z_results z_freq_data];
 end
 
-save("FinalData2.mat", "a_hat", "n0_w_results", "eps_w_results", "z_results", "n0_starting");
+save("FinalData3.mat", "a_hat", "n0_w_results", "eps_w_results", "z_results", "n0_starting");

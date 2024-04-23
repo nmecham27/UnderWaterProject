@@ -10,7 +10,9 @@ W = 21;
 load("OFDM_PILOT.mat");
 load("ofdm_map.mat");
 load("benchmark_parameter_172648_1.mat");
-load("benchmark_Zw_172648_1.mat");
+
+load("FinalData1.mat");
+bb_rece_data_172648_1474 = z_results;
 
 % Obtain the indices of the pilot symbols
 % NOTE: The indices found in the vector are actual_index-1
@@ -125,7 +127,8 @@ bler_one = wec_one/(W-1);
 %% Task 2
 %% Part a
 % Hydrophone 2
-load("benchmark_Zw_172648_2.mat");
+load("FinalData2.mat");
+bb_rece_data_172648_1475 = z_results;
 
 zp2 = bb_rece_data_172648_1475(pilot_index+1,:);
 
@@ -138,7 +141,8 @@ h_ls_two = (1/K_p)*V'*D'*zp2;
 H2 = freq_v*h_ls_two;
 
 % Hydrophone 3
-load("benchmark_Zw_172648_3.mat");
+load("FinalData3.mat");
+bb_rece_data_172648_1476 = z_results;
 
 zp3 = bb_rece_data_172648_1476(pilot_index+1,:);
 % Now calculate the time-domain channel
