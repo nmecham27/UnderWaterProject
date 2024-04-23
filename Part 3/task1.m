@@ -321,3 +321,5 @@ end
 %ber_three = bec_three/W/length(APP_code); % Shouldnt divide by W here?
 ber_three_total = sum(bec_three(:, 2:W))/(W-1)/length(APP_code);
 bler_three = wec_three/(W-1);
+
+save("part3_results.mat", "ber_one_total", "ber_two_total", "ber_three_total", "bler_one", "bler_two", "bler_three")
