@@ -26,16 +26,16 @@ h = Ls*fir1(N,1/Ms,kaiser(N+1,7.8562));
 load("pilot_signal_for_synchronization.mat"); %Loads the data into OFDM_data_pre_old
 load("itc_1007_compfilter.mat"); % stores vector in h_comp variable
 load('ofdm_map.mat');
-load('benchmark_rece_data_172648_1.mat');
+load('testing_rece_data_171846_2.mat');
 
 %Reassign the values loaded in so that we can more easily change to other
 %sets of data
 
 %Benchmark data.
-y_rec_data = rece_data_ofdm_bench;
+%y_rec_data = rece_data_ofdm_bench;
 
 %Real data
-%y_rec_data = rece_data_ofdm_test;
+y_rec_data = rece_data_ofdm_test;
 
 %Pilot signal
 y_pilot_signal = OFDM_data_pre_old;
@@ -51,7 +51,8 @@ plot(rec_data_length, y_rec_data);
 hold off
 
 %Filter out the noise from the passband signal
-y_pb = bandpass(y_rec_data,[-1000+Fc,8000+Fc], sampling_rate_256);
+y_pb = bandpass(y_rec_data,[-4000+Fc,4000+Fc], sampling_rate_256);
+%y_pb = bandpass(y_rec_data,[-8000+Fc,8000+Fc], sampling_rate_256);
 
 %The mach number
 a = v/c;
@@ -72,9 +73,7 @@ hold off
 %Hopefully this is only only place now that we have to do manual
 %data input
 %Uncomment for real data 1
-%sample_diff=2130750-10197;
-%Uncomment for benchmark data 1
-sample_diff=2128640-12057;
+sample_diff=2117950-0;
 T_rx = sample_diff/sampling_rate_256;
 a_hat = (T_tx/T_rx)-1;
 
