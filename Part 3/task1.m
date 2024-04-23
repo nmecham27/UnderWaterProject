@@ -66,16 +66,6 @@ x3 = 1/sqrt(2) - i*1/sqrt(2);
 x4 = -1/sqrt(2) - i*1/sqrt(2);
 for ofdm_symbol = 1:W
     for subcarrier = 1:K_d
-%         x_1 = -1*(norm(zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol)*(1/sqrt(2)+1i*1/sqrt(2)))^2)/noise_variance(ofdm_symbol);
-%         x_2 = -1*(norm(zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol)*(-1/sqrt(2)+1i*1/sqrt(2)))^2)/noise_variance(ofdm_symbol);
-%         x_3 = -1*(norm(zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol)*(1/sqrt(2)-1i*1/sqrt(2)))^2)/noise_variance(ofdm_symbol);
-%         x_4 = -1*(norm(zd(subcarrier,ofdm_symbol)-H_d(subcarrier,ofdm_symbol)*(-1/sqrt(2)-1i*1/sqrt(2)))^2)/noise_variance(ofdm_symbol);
-% 
-%         L_b1 = (max(x_1,x_3)*log(1+exp(-1*abs(x_3-x_1)))) - (max(x_2,x_4)*log(1+exp(-1*abs(x_4-x_2))));
-%         L_b2 = (max(x_1,x_2)*log(1+exp(-1*abs(x_2-x_1)))) - (max(x_3,x_4)*log(1+exp(-1*abs(x_4-x_3))));
-% 
-%         LR(ofdm_symbol, (subcarrier*2)-1) = L_b1;
-%         LR(ofdm_symbol, subcarrier*2) = L_b2;
         
         A = norm(-1*zd_one(subcarrier,ofdm_symbol)-H_d_one(subcarrier,ofdm_symbol).*x1)^2/noise_variance_one(ofdm_symbol);
         B = norm(-1*zd_one(subcarrier,ofdm_symbol)-H_d_one(subcarrier,ofdm_symbol).*x3)^2/noise_variance_one(ofdm_symbol);
@@ -87,6 +77,19 @@ for ofdm_symbol = 1:W
         
         LR((subcarrier*2)-1, ofdm_symbol) = L_b1;
         LR(subcarrier*2, ofdm_symbol) = L_b2;
+    end
+end
+
+% Scale down values for decoder
+for ofdm_sym = 1:W
+    if max(abs(LR(:,ofdm_sym)))>100
+        max_val=max(LR(:,ofdm_sym));
+        min_val=min(LR(:,ofdm_sym));
+        if abs(max_val)>abs(min_val)
+            LR(:,ofdm_sym)=LR(:,ofdm_sym)/abs(max_val)*100;
+        else
+            LR(:,ofdm_sym)=LR(:,ofdm_sym)/abs(min_val)*100;
+        end
     end
 end
 
@@ -149,9 +152,11 @@ H3 = freq_v*h_ls_three;
 H_d_two = H2(data_index+1,:);
 
 % Calculate norm(Hk) using only subcarriers data was sent
-norm_Hk_2_hydro = zeros(1,W);
-for ofdm_sym = 1:W
-   norm_Hk_2_hydro(ofdm_sym) = sqrt(sum(H_d_one(:, ofdm_sym)'*H_d_one(:, ofdm_sym))+sum(H_d_two(:, ofdm_sym)'*H_d_two(:, ofdm_sym)));
+norm_Hk_2_hydro = zeros(K_d, W);
+for ofdm_sym = 1: W
+    for subc = 1: K_d
+        norm_Hk_2_hydro(subc, ofdm_sym) =  sqrt((H_d_one(subc, ofdm_sym)*H_d_one(subc, ofdm_sym)')+(H_d_two(subc, ofdm_sym)*H_d_two(subc, ofdm_sym)')); 
+    end
 end
 
 % Received data on hydrophone 2
@@ -160,17 +165,18 @@ zd_two = bb_rece_data_172648_1475(data_index+1,:);
 noise_variance_two = (1/K_n)*sum(abs(bb_rece_data_172648_1475(null_index+1,:)).^2);
 
 % Calculate variance when combining hydrophones 1 and 2
-noise_variance_2_hydro = zeros(1, W);
-for ofdm_sym = 1: W
-    noise_variance_2_hydro(ofdm_sym) = sum(H_d_one(:, ofdm_sym)'*H_d_one(:, ofdm_sym))*noise_variance_one(ofdm_sym)+sum(H_d_two(:, ofdm_sym)'*H_d_two(:, ofdm_sym))*noise_variance_two(ofdm_sym);
+noise_variance_2_hydro = zeros(K_d, W);
+for ofdm_sym = 1:W
+    for subc = 1: K_d
+        noise_variance_2_hydro(subc, ofdm_sym) =  (1/(norm_Hk_2_hydro(subc, ofdm_sym)^2))*(noise_variance_one(ofdm_sym)*(H_d_one(subc, ofdm_sym)*H_d_one(subc, ofdm_sym)')+noise_variance_two(ofdm_sym)*(H_d_two(subc, ofdm_sym)*H_d_two(subc, ofdm_sym)'));
+    end
 end
-noise_variance_2_hydro = noise_variance_2_hydro.*(1./norm_Hk_2_hydro.^2);
 
 % Calculate qk (scalar)
 qk_2_hydro = zeros(K_d, W);
 for ofdm_sym = 1: W
    for subc = 1:K_d
-      qk_2_hydro(subc, ofdm_sym) = ([H_d_one(subc, ofdm_sym);H_d_two(subc, ofdm_sym)]'*[zd_one(subc, ofdm_sym);zd_two(subc, ofdm_sym)])/norm_Hk_2_hydro(ofdm_sym); 
+      qk_2_hydro(subc, ofdm_sym) = ([H_d_one(subc, ofdm_sym);H_d_two(subc, ofdm_sym)]'*[zd_one(subc, ofdm_sym);zd_two(subc, ofdm_sym)])/norm_Hk_2_hydro(subc, ofdm_sym); 
    end
 end
 
@@ -178,16 +184,29 @@ end
 LR_2_hydro = zeros(2*K_d, W);
 for ofdm_sym = 1:W
     for subc = 1:K_d
-        A = (-1*abs(qk_2_hydro(subc, ofdm_sym)-norm_Hk_2_hydro(ofdm_sym)*x1)^2)/noise_variance_2_hydro(ofdm_sym);
-        B = (-1*abs(qk_2_hydro(subc, ofdm_sym)-norm_Hk_2_hydro(ofdm_sym)*x3)^2)/noise_variance_2_hydro(ofdm_sym);
-        C = (-1*abs(qk_2_hydro(subc, ofdm_sym)-norm_Hk_2_hydro(ofdm_sym)*x2)^2)/noise_variance_2_hydro(ofdm_sym);
-        D = (-1*abs(qk_2_hydro(subc, ofdm_sym)-norm_Hk_2_hydro(ofdm_sym)*x4)^2)/noise_variance_2_hydro(ofdm_sym);
+        A = (-1*abs(qk_2_hydro(subc, ofdm_sym)-norm_Hk_2_hydro(subc, ofdm_sym)*x1)^2)/noise_variance_2_hydro(subc, ofdm_sym);
+        B = (-1*abs(qk_2_hydro(subc, ofdm_sym)-norm_Hk_2_hydro(subc, ofdm_sym)*x3)^2)/noise_variance_2_hydro(subc, ofdm_sym);
+        C = (-1*abs(qk_2_hydro(subc, ofdm_sym)-norm_Hk_2_hydro(subc, ofdm_sym)*x2)^2)/noise_variance_2_hydro(subc, ofdm_sym);
+        D = (-1*abs(qk_2_hydro(subc, ofdm_sym)-norm_Hk_2_hydro(subc, ofdm_sym)*x4)^2)/noise_variance_2_hydro(subc, ofdm_sym);
         
         L_b1 = max(A, B)+log(1+exp(-1*abs(B-A)))-(max(C,D)+log(1+exp(-1*abs(D-C))));
         L_b2 = max(A, C)+log(1+exp(-1*abs(C-A)))-(max(B,D)+log(1+exp(-1*abs(D-B))));
         
         LR_2_hydro((subc*2)-1, ofdm_sym) = L_b1;
         LR_2_hydro(subc*2, ofdm_sym) = L_b2;
+    end
+end
+
+% Scale down values for decoder
+for ofdm_sym = 1:W
+    if max(abs(LR_2_hydro(:,ofdm_sym)))>100
+        max_val=max(LR_2_hydro(:,ofdm_sym));
+        min_val=min(LR_2_hydro(:,ofdm_sym));
+        if abs(max_val)>abs(min_val)
+            LR_2_hydro(:,ofdm_sym)=LR_2_hydro(:,ofdm_sym)/abs(max_val)*100;
+        else
+            LR_2_hydro(:,ofdm_sym)=LR_2_hydro(:,ofdm_sym)/abs(min_val)*100;
+        end
     end
 end
 
@@ -219,10 +238,13 @@ bler_two = wec_two/(W-1);
 H_d_three = H3(data_index+1,:);
 
 % Calculate norm(Hk) using only subcarriers data was sent
-norm_Hk_3_hydro = zeros(1,W);
-for ofdm_sym = 1:W
-   norm_Hk_3_hydro(ofdm_sym) = sqrt(sum(H_d_one(:, ofdm_sym)'*H_d_one(:, ofdm_sym))+sum(H_d_two(:, ofdm_sym)'*H_d_two(:, ofdm_sym))+sum(H_d_three(:, ofdm_sym)'*H_d_three(:, ofdm_sym)));
+norm_Hk_3_hydro = zeros(K_d, W);
+for ofdm_sym = 1: W
+    for subc = 1: K_d
+        norm_Hk_3_hydro(subc, ofdm_sym) =  sqrt((H_d_one(subc, ofdm_sym)*H_d_one(subc, ofdm_sym)')+(H_d_two(subc, ofdm_sym)*H_d_two(subc, ofdm_sym)')+(H_d_three(subc, ofdm_sym)*H_d_three(subc, ofdm_sym)'));
+    end
 end
+
 
 % Received data on hydrophone 3
 zd_three = bb_rece_data_172648_1476(data_index+1,:);
@@ -230,17 +252,18 @@ zd_three = bb_rece_data_172648_1476(data_index+1,:);
 noise_variance_three = (1/K_n)*sum(abs(bb_rece_data_172648_1476(null_index+1,:)).^2);
 
 % Calculate variance when combining hydrophones 1, 2, and 3
-noise_variance_3_hydro = zeros(1, W);
-for ofdm_sym = 1: W
-    noise_variance_3_hydro(ofdm_sym) = sum(H_d_one(:, ofdm_sym)'*H_d_one(:, ofdm_sym))*noise_variance_one(ofdm_sym)+sum(H_d_two(:, ofdm_sym)'*H_d_two(:, ofdm_sym))*noise_variance_two(ofdm_sym)+sum(H_d_three(:, ofdm_sym)'*H_d_three(:, ofdm_sym))*noise_variance_three(ofdm_sym);
+noise_variance_3_hydro = zeros(K_d, W);
+for ofdm_sym = 1:W
+    for subc = 1: K_d
+        noise_variance_3_hydro(subc, ofdm_sym) =  (1/(norm_Hk_2_hydro(subc, ofdm_sym)^2))*(noise_variance_one(ofdm_sym)*(H_d_one(subc, ofdm_sym)*H_d_one(subc, ofdm_sym)')+noise_variance_two(ofdm_sym)*(H_d_two(subc, ofdm_sym)*H_d_two(subc, ofdm_sym)')+noise_variance_three(ofdm_sym)*(H_d_three(subc, ofdm_sym)*H_d_three(subc, ofdm_sym)'));
+    end
 end
-noise_variance_3_hydro = noise_variance_3_hydro.*(1./norm_Hk_3_hydro.^2);
 
 % Calculate qk (scalar)
 qk_3_hydro = zeros(K_d, W);
 for ofdm_sym = 1: W
    for subc = 1:K_d
-      qk_3_hydro(subc, ofdm_sym) = ([H_d_one(subc, ofdm_sym);H_d_two(subc, ofdm_sym);H_d_three(subc, ofdm_sym)]'*[zd_one(subc, ofdm_sym);zd_two(subc, ofdm_sym);zd_three(subc, ofdm_sym)])/norm_Hk_3_hydro(ofdm_sym); 
+      qk_3_hydro(subc, ofdm_sym) = ([H_d_one(subc, ofdm_sym);H_d_two(subc, ofdm_sym);H_d_three(subc, ofdm_sym)]'*[zd_one(subc, ofdm_sym);zd_two(subc, ofdm_sym);zd_three(subc, ofdm_sym)])/norm_Hk_3_hydro(subc, ofdm_sym); 
    end
 end
 
@@ -248,16 +271,29 @@ end
 LR_3_hydro = zeros(2*K_d, W);
 for ofdm_sym = 1:W
     for subc = 1:K_d
-        A = (-1*abs(qk_3_hydro(subc, ofdm_sym)-norm_Hk_3_hydro(ofdm_sym)*x1)^2)/noise_variance_3_hydro(ofdm_sym);
-        B = (-1*abs(qk_3_hydro(subc, ofdm_sym)-norm_Hk_3_hydro(ofdm_sym)*x3)^2)/noise_variance_3_hydro(ofdm_sym);
-        C = (-1*abs(qk_3_hydro(subc, ofdm_sym)-norm_Hk_3_hydro(ofdm_sym)*x2)^2)/noise_variance_3_hydro(ofdm_sym);
-        D = (-1*abs(qk_3_hydro(subc, ofdm_sym)-norm_Hk_3_hydro(ofdm_sym)*x4)^2)/noise_variance_3_hydro(ofdm_sym);
+        A = (-1*abs(qk_3_hydro(subc, ofdm_sym)-norm_Hk_3_hydro(subc, ofdm_sym)*x1)^2)/noise_variance_3_hydro(subc, ofdm_sym);
+        B = (-1*abs(qk_3_hydro(subc, ofdm_sym)-norm_Hk_3_hydro(subc, ofdm_sym)*x3)^2)/noise_variance_3_hydro(subc, ofdm_sym);
+        C = (-1*abs(qk_3_hydro(subc, ofdm_sym)-norm_Hk_3_hydro(subc, ofdm_sym)*x2)^2)/noise_variance_3_hydro(subc, ofdm_sym);
+        D = (-1*abs(qk_3_hydro(subc, ofdm_sym)-norm_Hk_3_hydro(subc, ofdm_sym)*x4)^2)/noise_variance_3_hydro(subc, ofdm_sym);
         
         L_b1 = max(A, B)+log(1+exp(-1*abs(B-A)))-(max(C,D)+log(1+exp(-1*abs(D-C))));
         L_b2 = max(A, C)+log(1+exp(-1*abs(C-A)))-(max(B,D)+log(1+exp(-1*abs(D-B))));
         
         LR_3_hydro((subc*2)-1, ofdm_sym) = L_b1;
         LR_3_hydro(subc*2, ofdm_sym) = L_b2;
+    end
+end
+
+% Scale down values for decoder
+for ofdm_sym = 1:W
+    if max(abs(LR_3_hydro(:,ofdm_sym)))>100
+        max_val=max(LR_3_hydro(:,ofdm_sym));
+        min_val=min(LR_3_hydro(:,ofdm_sym));
+        if abs(max_val)>abs(min_val)
+            LR_3_hydro(:,ofdm_sym)=LR_3_hydro(:,ofdm_sym)/abs(max_val)*100;
+        else
+            LR_3_hydro(:,ofdm_sym)=LR_3_hydro(:,ofdm_sym)/abs(min_val)*100;
+        end
     end
 end
 
